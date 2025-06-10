@@ -1,0 +1,109 @@
+
+MIT License
+
+Copyright (c) 2024 Krish Yadav
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## TaskMaster - Task Management Application
+
+**Creator & Developer:** Krish Yadav  
+**Project Type:** Open Source Web Application  
+**License:** MIT License  
+
+### About This Project
+
+TaskMaster is a modern, feature-rich task management application designed to help users organize their daily tasks efficiently. Built with cutting-edge web technologies including React, TypeScript, Tailwind CSS, and Shadcn UI components.
+
+### Key Features
+
+- ✅ Comprehensive task management with priority levels and deadlines
+- 🎨 Modern, responsive design with dark/light mode support
+- 📊 Analytics and achievement system
+- 📅 Interactive calendar with advanced date selection
+- 🔄 Drag and drop task reordering
+- 🎯 Priority-based task organization
+- 🏆 Achievement and progress tracking system
+- 🔔 Notification system for task updates
+- 👤 User profiles with customizable preferences
+- 🎭 Theme customization (Light/Dark/System)
+
+### Copyright and Usage Rights
+
+This software is released under the MIT License, which means:
+
+**You are free to:**
+- ✅ Use the software for any purpose (personal or commercial)
+- ✅ Study and modify the source code
+- ✅ Distribute copies of the software
+- ✅ Distribute modified versions of the software
+- ✅ Use in proprietary applications
+- ✅ Sell copies or modified versions
+
+**Requirements:**
+- 📄 Include the original copyright notice and license text
+- 📝 Acknowledge Krish Yadav as the original creator
+
+**No Warranty:**
+- ⚠️ The software is provided "as is" without warranty of any kind
+- 🚫 The author is not liable for any damages or issues
+
+### Developer's Note
+
+I, Krish Yadav, have created TaskMaster with the intention of helping people become more productive and organized. I encourage the community to:
+
+- 🤝 Contribute improvements and new features
+- 🐛 Report bugs and suggest enhancements  
+- 🌟 Use this project as a learning resource
+- 🔧 Customize it for your specific needs
+- 📤 Share your modifications with the community
+
+### Technical Stack
+
+- **Frontend:** React 18+ with TypeScript
+- **Styling:** Tailwind CSS with custom design system
+- **UI Components:** Shadcn UI component library
+- **Icons:** Lucide React
+- **Date Handling:** date-fns
+- **Build Tool:** Vite
+- **Deployment:** Static hosting compatible
+
+### Contributing
+
+While this project is open source and modifications are encouraged, if you'd like to contribute back to the main project, please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request with detailed description
+
+### Contact
+
+For questions, suggestions, or collaboration opportunities:
+- **Developer:** Krish Yadav
+- **Project:** TaskMaster
+- **License:** MIT
+
+---
+
+**Thank you for using TaskMaster! Happy organizing! 🚀**
+
+*Built with ❤️ by Krish Yadav*
