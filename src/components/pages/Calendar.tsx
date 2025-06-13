@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -11,9 +10,9 @@ import {
   CheckCircle2,
   Filter
 } from 'lucide-react';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, parseISO } from 'date-fns';
 import TaskList from '@/components/TaskList';
-import type { Task } from '@/pages/Index';
+import type { Task } from '@/lib/types';
 
 interface CalendarProps {
   tasks: Task[];
@@ -25,7 +24,7 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
   const [viewMode, setViewMode] = useState<'all' | 'completed' | 'pending'>('all');
 
   const selectedDateTasks = tasks.filter(task => 
-    isSameDay(task.date, selectedDate)
+    isSameDay(parseISO(task.date), selectedDate)
   );
 
   const filteredTasks = selectedDateTasks.filter(task => {
@@ -36,49 +35,52 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
 
   // Get tasks for calendar highlighting
   const getTasksForDate = (date: Date) => {
-    return tasks.filter(task => isSameDay(task.date, date));
+    return tasks.filter(task => isSameDay(parseISO(task.date), date));
   };
 
   // Create modifiers for different task states
   const datesWithAllCompleted = tasks
     .reduce((acc: Date[], task) => {
-      const dayTasks = getTasksForDate(task.date);
+      const taskDate = parseISO(task.date);
+      const dayTasks = getTasksForDate(taskDate);
       const completedTasks = dayTasks.filter(t => t.completed).length;
       const hasAllCompleted = completedTasks === dayTasks.length && dayTasks.length > 0;
       
-      if (hasAllCompleted && !acc.some(date => isSameDay(date, task.date))) {
-        acc.push(task.date);
+      if (hasAllCompleted && !acc.some(date => isSameDay(date, taskDate))) {
+        acc.push(taskDate);
       }
       return acc;
     }, []);
 
   const datesWithPartialCompleted = tasks
     .reduce((acc: Date[], task) => {
-      const dayTasks = getTasksForDate(task.date);
+      const taskDate = parseISO(task.date);
+      const dayTasks = getTasksForDate(taskDate);
       const completedTasks = dayTasks.filter(t => t.completed).length;
       const hasPartialCompleted = completedTasks > 0 && completedTasks < dayTasks.length;
       
-      if (hasPartialCompleted && !acc.some(date => isSameDay(date, task.date))) {
-        acc.push(task.date);
+      if (hasPartialCompleted && !acc.some(date => isSameDay(date, taskDate))) {
+        acc.push(taskDate);
       }
       return acc;
     }, []);
 
   const datesWithPendingTasks = tasks
     .reduce((acc: Date[], task) => {
-      const dayTasks = getTasksForDate(task.date);
+      const taskDate = parseISO(task.date);
+      const dayTasks = getTasksForDate(taskDate);
       const completedTasks = dayTasks.filter(t => t.completed).length;
       const hasOnlyPending = completedTasks === 0 && dayTasks.length > 0;
       
-      if (hasOnlyPending && !acc.some(date => isSameDay(date, task.date))) {
-        acc.push(task.date);
+      if (hasOnlyPending && !acc.some(date => isSameDay(date, taskDate))) {
+        acc.push(taskDate);
       }
       return acc;
     }, []);
 
   const upcomingTasks = tasks
-    .filter(task => task.date > new Date())
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .filter(task => parseISO(task.date) > new Date())
+    .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime())
     .slice(0, 5);
 
   return (
@@ -163,7 +165,7 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
                     </Badge>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {format(task.date, 'MMM dd, yyyy')} • {task.startTime} - {task.endTime}
+                    {format(parseISO(task.date), 'MMM dd, yyyy')} • {task.start_time} - {task.end_time}
                   </div>
                 </div>
               ))

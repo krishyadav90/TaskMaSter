@@ -1,28 +1,68 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CheckSquare, Mail, Lock, User } from 'lucide-react';
+import { CheckSquare, Mail, Lock, User as UserIcon } from 'lucide-react'; // Rename User to UserIcon
+import { supabase } from '@/lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/components/ui/use-toast';
+import { User } from '@/lib/types'; // Import User interface
 
-interface AuthProps {
-  onSignIn: (email: string, password: string) => void;
-  onSignUp: (name: string, email: string, password: string) => void;
-}
-
-const Auth = ({ onSignIn, onSignUp }: AuthProps) => {
+const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignUp) {
-      onSignUp(name, email, password);
-    } else {
-      onSignIn(email, password);
+    try {
+      console.log('Starting auth process:', { isSignUp, email });
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { name } },
+        });
+        if (error) throw error;
+        console.log('Sign-up response:', data);
+        if (data.user) {
+          const newUser: User = {
+            id: data.user.id,
+            name,
+            email,
+            signup_date: new Date().toISOString(),
+            preferences: { theme: 'system', notifications: true, emailReminders: true },
+          };
+          const { error: profileError } = await supabase.from('users').insert(newUser);
+          if (profileError) throw profileError;
+          toast({ title: 'Success', description: 'Account created!' });
+          await supabase.auth.getSession();
+          console.log('Navigating to / after sign-up');
+          navigate('/', { replace: true });
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        console.log('Sign-in response:', data);
+        await supabase.auth.getSession();
+        toast({ title: 'Success', description: 'Signed in!' });
+        console.log('Navigating to / after sign-in');
+        navigate('/', { replace: true });
+      }
+    } catch (err) {
+      console.error('Auth error:', err);
+      toast({
+        title: 'Error',
+        description: (err as Error).message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -52,7 +92,7 @@ const Auth = ({ onSignIn, onSignUp }: AuthProps) => {
               {isSignUp && (
                 <div className="space-y-2">
                   <Label htmlFor="name" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
+                    <UserIcon className="h-4 w-4" /> {/* Use UserIcon */}
                     Full Name
                   </Label>
                   <Input
@@ -65,7 +105,6 @@ const Auth = ({ onSignIn, onSignUp }: AuthProps) => {
                   />
                 </div>
               )}
-              
               <div className="space-y-2">
                 <Label htmlFor="email" className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
@@ -80,7 +119,6 @@ const Auth = ({ onSignIn, onSignUp }: AuthProps) => {
                   className="shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105"
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="password" className="flex items-center gap-2">
                   <Lock className="h-4 w-4" />
@@ -95,15 +133,13 @@ const Auth = ({ onSignIn, onSignUp }: AuthProps) => {
                   className="shadow-lg hover:shadow-xl transition-all duration-300 focus:scale-105"
                 />
               </div>
-              
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
               >
                 {isSignUp ? 'Sign Up' : 'Sign In'}
               </Button>
             </form>
-            
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 {isSignUp ? 'Already have an account?' : "Don't have an account?"}

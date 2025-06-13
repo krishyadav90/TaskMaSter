@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -12,11 +11,11 @@ import {
   Calendar as CalendarIcon,
   BarChart3
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns'; // Add parseISO
 import { useState } from 'react';
 import TaskList from '@/components/TaskList';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { Task, User } from '@/pages/Index';
+import type { Task, User } from '@/lib/types';
 
 interface DashboardProps {
   tasks: Task[];
@@ -43,7 +42,7 @@ const Dashboard = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const todayTasks = tasks.filter(task => 
-    format(task.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+    format(parseISO(task.date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
   );
 
   const completedToday = todayTasks.filter(task => task.completed).length;

@@ -1,4 +1,4 @@
-
+import { FC } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -14,13 +14,37 @@ import {
   Target
 } from 'lucide-react';
 
-const About = () => {
+const socialLinks = [
+  {
+    name: 'GitHub',
+    url: 'https://github.com/krishyadav', // Replace with your GitHub URL
+    icon: Github,
+    className: 'bg-gray-100 dark:bg-slate-700',
+    ariaLabel: "Visit Krish Yadav's GitHub profile",
+  },
+  {
+    name: 'LinkedIn',
+    url: 'https://linkedin.com/in/krishyadav', // Replace with your LinkedIn URL
+    icon: Linkedin,
+    className: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+    ariaLabel: "Visit Krish Yadav's LinkedIn profile",
+  },
+  {
+    name: 'Email',
+    url: 'mailto:krish@example.com', // Replace with your email
+    icon: Mail,
+    className: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+    ariaLabel: 'Send email to Krish Yadav',
+  },
+];
+
+const About: FC = () => {
   return (
     <div className="flex-1 p-6 space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <SidebarTrigger className="md:hidden" />
+          <SidebarTrigger className="md:hidden" aria-label="Toggle sidebar" />
           <div>
             <h1 className="text-3xl font-bold text-foreground">About TaskMaster</h1>
             <p className="text-muted-foreground">Meet the creator and learn about this project</p>
@@ -39,7 +63,11 @@ const About = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center gap-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110">
+              <div
+                className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110"
+                role="img"
+                aria-label="Krish Yadav's avatar with initials KY"
+              >
                 KY
               </div>
               <div>
@@ -69,18 +97,19 @@ const About = () => {
             </div>
 
             <div className="flex gap-3">
-              <div className="flex items-center gap-2 p-2 bg-gray-100 dark:bg-slate-700 rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300">
-                <Github className="h-4 w-4" />
-                <span className="text-sm">GitHub</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300">
-                <Linkedin className="h-4 w-4" />
-                <span className="text-sm">LinkedIn</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300">
-                <Mail className="h-4 w-4" />
-                <span className="text-sm">Email</span>
-              </div>
+              {socialLinks.map(({ name, url, icon: Icon, className, ariaLabel }) => (
+                <a
+                  key={name}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-2 p-2 ${className} rounded-lg cursor-pointer hover:scale-105 transition-transform duration-300`}
+                  aria-label={ariaLabel}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="text-sm">{name}</span>
+                </a>
+              ))}
             </div>
           </CardContent>
         </Card>

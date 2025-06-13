@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Progress } from '@/components/ui/progress';
@@ -11,8 +10,8 @@ import {
   Clock,
   CheckCircle2
 } from 'lucide-react';
-import { format, subDays, startOfWeek, endOfWeek } from 'date-fns';
-import type { Task, User } from '@/pages/Index';
+import { format, subDays, startOfWeek, endOfWeek, parseISO } from 'date-fns'; // Add parseISO
+import type { Task, User } from '@/lib/types';
 
 interface AnalyticsProps {
   tasks: Task[];
@@ -29,7 +28,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
   const weekStart = startOfWeek(new Date());
   const weekEnd = endOfWeek(new Date());
   const weeklyTasks = tasks.filter(task => 
-    task.date >= weekStart && task.date <= weekEnd
+    parseISO(task.date) >= weekStart && parseISO(task.date) <= weekEnd
   );
   const weeklyCompleted = weeklyTasks.filter(task => task.completed).length;
 
@@ -47,7 +46,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
   const dailyStats = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(new Date(), i);
     const dayTasks = tasks.filter(task => 
-      format(task.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+      format(parseISO(task.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
     );
     const dayCompleted = dayTasks.filter(task => task.completed).length;
     return {

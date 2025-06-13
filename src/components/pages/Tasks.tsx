@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import {
   ArrowUpDown
 } from 'lucide-react';
 import TaskList from '@/components/TaskList';
-import type { Task } from '@/pages/Index';
+import type { Task } from '@/lib/types'; // Correct import
 
 interface TasksProps {
   tasks: Task[];
