@@ -10,8 +10,9 @@ import {
   Clock,
   CheckCircle2
 } from 'lucide-react';
-import { format, subDays, startOfWeek, endOfWeek, parseISO } from 'date-fns'; // Add parseISO
+import { format, subDays, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import type { Task, User } from '@/lib/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AnalyticsProps {
   tasks: Task[];
@@ -19,6 +20,8 @@ interface AnalyticsProps {
 }
 
 const Analytics = ({ tasks, user }: AnalyticsProps) => {
+  const { t } = useLanguage();
+
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(task => task.completed).length;
   const pendingTasks = totalTasks - completedTasks;
@@ -34,12 +37,12 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
 
   // Category breakdown
   const categoryStats = {
-    Study: tasks.filter(task => task.category === 'Study'),
-    Work: tasks.filter(task => task.category === 'Work'),
-    Health: tasks.filter(task => task.category === 'Health'),
-    Personal: tasks.filter(task => task.category === 'Personal'),
-    Productive: tasks.filter(task => task.category === 'Productive'),
-    Life: tasks.filter(task => task.category === 'Life'),
+    Study: tasks.filter(task => task.category === t('study')),
+    Work: tasks.filter(task => task.category === t('work')),
+    Health: tasks.filter(task => task.category === t('health')),
+    Personal: tasks.filter(task => task.category === t('personal')),
+    Productive: tasks.filter(task => task.category === t('productive')),
+    Life: tasks.filter(task => task.category === t('life')),
   };
 
   // Daily completion for the last 7 days
@@ -62,10 +65,10 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <SidebarTrigger className="md:hidden" />
+          <SidebarTrigger className="md:hidden" aria-label={t('toggleSidebar')} />
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
-            <p className="text-muted-foreground">Track your productivity and progress over time.</p>
+            <h1 className="text-3xl font-bold text-foreground">{t('analytics')}</h1>
+            <p className="text-muted-foreground">{t('trackProductivity')}</p>
           </div>
         </div>
       </div>
@@ -76,7 +79,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">Total Tasks</p>
+                <p className="text-sm font-medium text-blue-600">{t('totalTasks')}</p>
                 <p className="text-3xl font-bold text-blue-900">{totalTasks}</p>
               </div>
               <Target className="h-8 w-8 text-blue-500" />
@@ -88,7 +91,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600">Completed</p>
+                <p className="text-sm font-medium text-green-600">{t('completed')}</p>
                 <p className="text-3xl font-bold text-green-900">{completedTasks}</p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-green-500" />
@@ -100,7 +103,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-orange-600">Pending</p>
+                <p className="text-sm font-medium text-orange-600">{t('remaining')}</p>
                 <p className="text-3xl font-bold text-orange-900">{pendingTasks}</p>
               </div>
               <Clock className="h-8 w-8 text-orange-500" />
@@ -112,7 +115,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600">Success Rate</p>
+                <p className="text-sm font-medium text-purple-600">{t('successRate')}</p>
                 <p className="text-3xl font-bold text-purple-900">{Math.round(completionRate)}%</p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-500" />
@@ -128,7 +131,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Category Breakdown
+              {t('categoryBreakdown')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -139,12 +142,12 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
               
               const getCategoryColor = (cat: string) => {
                 switch (cat) {
-                  case 'Study': return 'bg-pink-500';
-                  case 'Work': return 'bg-blue-500';
-                  case 'Health': return 'bg-green-500';
-                  case 'Personal': return 'bg-purple-500';
-                  case 'Productive': return 'bg-orange-500';
-                  case 'Life': return 'bg-indigo-500';
+                  case t('study'): return 'bg-pink-500';
+                  case t('work'): return 'bg-blue-500';
+                  case t('health'): return 'bg-green-500';
+                  case t('personal'): return 'bg-purple-500';
+                  case t('productive'): return 'bg-orange-500';
+                  case t('life'): return 'bg-indigo-500';
                   default: return 'bg-gray-500';
                 }
               };
@@ -177,7 +180,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Weekly Overview
+              {t('weeklyOverview')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -185,7 +188,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
               <div className="text-3xl font-bold text-indigo-600 mb-2">
                 {weeklyCompleted}/{weeklyTasks.length}
               </div>
-              <p className="text-sm text-muted-foreground">Tasks completed this week</p>
+              <p className="text-sm text-muted-foreground">{t('tasksCompletedThisWeek')}</p>
               <div className="mt-4">
                 <Progress 
                   value={weeklyTasks.length > 0 ? (weeklyCompleted / weeklyTasks.length) * 100 : 0} 
@@ -195,7 +198,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
             </div>
 
             <div className="space-y-3">
-              <h4 className="font-semibold">Recent Activity</h4>
+              <h4 className="font-semibold">{t('recentActivity')}</h4>
               <div className="space-y-2">
                 {tasks.slice(0, 3).map((task) => (
                   <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -208,11 +211,11 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
                     <Badge 
                       variant="outline" 
                       className={
-                        task.category === 'Study' ? 'bg-pink-50 text-pink-700 border-pink-200' :
-                        task.category === 'Work' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                        task.category === 'Health' ? 'bg-green-50 text-green-700 border-green-200' :
-                        task.category === 'Personal' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                        task.category === 'Productive' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                        task.category === t('study') ? 'bg-pink-50 text-pink-700 border-pink-200' :
+                        task.category === t('work') ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        task.category === t('health') ? 'bg-green-50 text-green-700 border-green-200' :
+                        task.category === t('personal') ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                        task.category === t('productive') ? 'bg-orange-50 text-orange-700 border-orange-200' :
                         'bg-indigo-50 text-indigo-700 border-indigo-200'
                       }
                     >
@@ -231,7 +234,7 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Daily Performance (Last 7 Days)
+            {t('dailyPerformance')}
           </CardTitle>
         </CardHeader>
         <CardContent>

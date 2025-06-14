@@ -6,6 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Settings, Bell, CheckCircle, Sun, Moon, Globe, Upload, Link } from 'lucide-react';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTheme } from '@/components/ThemeProvider';
@@ -34,9 +41,18 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
   const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(user?.preferences.emailReminders || false);
 
   const languages = [
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
-    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+    { value: 'en', label: 'English', flag: '🇺🇸' },
+    { value: 'hi', label: 'हिंदी', flag: '🇮🇳' },
+    { value: 'ru', label: 'Русский', flag: '🇷🇺' },
+    { value: 'zh', label: '中文', flag: '🇨🇳' },
+    { value: 'es', label: 'Español', flag: '🇪🇸' },
+    { value: 'fr', label: 'Français', flag: '🇫🇷' },
+    { value: 'pt', label: 'Português', flag: '🇵🇹' },
+    { value: 'ur', label: 'اردو', flag: '🇵🇰' },
+    { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { value: 'ja', label: '日本語', flag: '🇯🇵' },
+    { value: 'id', label: 'Bahasa Indonesia', flag: '🇮🇩' },
+    { value: 'ko', label: '한국어', flag: '🇰🇷' },
   ];
 
   const handleUpdateProfile = () => {
@@ -243,19 +259,21 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
                 <Globe className="h-4 w-4" />
                 {t('language')}
               </Label>
-              <div className="grid grid-cols-1 gap-2">
-                {languages.map((lang) => (
-                  <Button
-                    key={lang.code}
-                    variant={language === lang.code ? 'default' : 'outline'}
-                    className="justify-start h-auto p-3 hover:scale-105 transition-all duration-300"
-                    onClick={() => setLanguage(lang.code)}
-                  >
-                    <span className="mr-2 text-lg">{lang.flag}</span>
-                    <span>{lang.name}</span>
-                  </Button>
-                ))}
-              </div>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger className="w-full hover:shadow-lg transition-all duration-300">
+                  <SelectValue placeholder={t('language')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((lang) => (
+                    <SelectItem key={lang.value} value={lang.value}>
+                      <span className="flex items-center gap-2">
+                        <span className="text-lg">{lang.flag}</span>
+                        {lang.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Theme Selection */}

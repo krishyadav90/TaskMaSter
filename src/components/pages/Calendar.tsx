@@ -13,6 +13,7 @@ import {
 import { format, isSameDay, parseISO } from 'date-fns';
 import TaskList from '@/components/TaskList';
 import type { Task } from '@/lib/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CalendarProps {
   tasks: Task[];
@@ -20,6 +21,7 @@ interface CalendarProps {
 }
 
 const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
+  const { t } = useLanguage();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'all' | 'completed' | 'pending'>('all');
 
@@ -88,10 +90,10 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <SidebarTrigger className="md:hidden" />
+          <SidebarTrigger className="md:hidden" aria-label={t('toggleSidebar')} />
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Calendar</h1>
-            <p className="text-muted-foreground">Plan and organize your tasks by date.</p>
+            <h1 className="text-3xl font-bold text-foreground">{t('calendar')}</h1>
+            <p className="text-muted-foreground">{t('planOrganize')}</p>
           </div>
         </div>
       </div>
@@ -102,20 +104,20 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5" />
-              Task Calendar
+              {t('taskCalendar')}
             </CardTitle>
             <div className="flex gap-2 text-xs">
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-green-100 rounded"></div>
-                <span>All Complete</span>
+                <span>{t('allComplete')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-yellow-100 rounded"></div>
-                <span>Partial</span>
+                <span>{t('partial')}</span>
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-blue-100 rounded"></div>
-                <span>Pending</span>
+                <span>{t('pending')}</span>
               </div>
             </div>
           </CardHeader>
@@ -144,7 +146,7 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Upcoming Tasks
+              {t('upcomingTasks')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -156,8 +158,8 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
                     <Badge 
                       variant="outline" 
                       className={
-                        task.category === 'Study' ? 'bg-pink-50 text-pink-700 border-pink-200' :
-                        task.category === 'Productive' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        task.category === t('study') ? 'bg-pink-50 text-pink-700 border-pink-200' :
+                        task.category === t('productive') ? 'bg-blue-50 text-blue-700 border-blue-200' :
                         'bg-green-50 text-green-700 border-green-200'
                       }
                     >
@@ -172,7 +174,7 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
             ) : (
               <div className="text-center py-6 text-muted-foreground">
                 <Clock className="mx-auto h-8 w-8 mb-2 opacity-50" />
-                <p className="text-sm">No upcoming tasks</p>
+                <p className="text-sm">{t('noUpcomingTasks')}</p>
               </div>
             )}
           </CardContent>
@@ -185,7 +187,7 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5" />
-              Tasks for {format(selectedDate, 'EEEE, MMMM dd, yyyy')}
+              {t('tasksFor')} {format(selectedDate, 'EEEE, MMMM dd, yyyy')}
             </div>
             <div className="flex gap-2">
               <Button
@@ -193,21 +195,21 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
                 size="sm"
                 onClick={() => setViewMode('all')}
               >
-                All ({selectedDateTasks.length})
+                {t('all')} ({selectedDateTasks.length})
               </Button>
               <Button
                 variant={viewMode === 'completed' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('completed')}
               >
-                Completed ({selectedDateTasks.filter(t => t.completed).length})
+                {t('completed')} ({selectedDateTasks.filter(t => t.completed).length})
               </Button>
               <Button
                 variant={viewMode === 'pending' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('pending')}
               >
-                Pending ({selectedDateTasks.filter(t => !t.completed).length})
+                {t('pending')} ({selectedDateTasks.filter(t => !t.completed).length})
               </Button>
             </div>
           </CardTitle>
@@ -221,7 +223,7 @@ const Calendar = ({ tasks, onToggleTask }: CalendarProps) => {
           {filteredTasks.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <CalendarIcon className="mx-auto h-12 w-12 mb-2 opacity-50" />
-              <p>No tasks for this date</p>
+              <p>{t('noTasksForDate')}</p>
             </div>
           )}
         </CardContent>
