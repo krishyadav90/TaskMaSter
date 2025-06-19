@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import Dashboard from '@/components/pages/Dashboard';
@@ -14,83 +14,173 @@ import TaskHistoryModal from '@/components/TaskHistoryModal';
 import ShareTaskModal from '@/components/ShareTaskModal';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { User, Task } from '@/lib/types';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Session } from '@supabase/supabase-js';
+import { Task, User } from '@/lib/types'; // Use imported types
 
-const Index = () => {
+interface Notification {
+  id: string;
+  message: string;
+  timestamp: string;
+}
+
+interface IndexProps {
+  session: Session;
+}
+
+const Index = ({ session }: IndexProps) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [notifications, setNotifications] = useState<string[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<Task | null>(null);
   const [selectedTaskForShare, setSelectedTaskForShare] = useState<Task | null>(null);
+  const [hasWelcomed, setHasWelcomed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
-  const fetchTasks = async (userId: string) => {
-    const { data: tasksData, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', userId)
-      .order('task_order', { ascending: true });
-    if (error) {
-      console.error('Error fetching tasks:', error);
-      addNotification(`Failed to fetch tasks: ${error.message}`);
-      return;
-    }
-    setTasks(tasksData || []);
+  const formatTimestamp = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
 
-  useEffect(() => {
-    const fetchUserAndTasks = async () => {
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      if (authError || !authUser) {
-        console.log('No auth user, redirecting to /auth');
-        navigate('/auth');
-        return;
+  const addNotification = (message: string) => {
+    if (!user?.preferences.notifications) return;
+    const timestamp = formatTimestamp();
+    const notification: Notification = {
+      id: crypto.randomUUID(),
+      message: `${message} at ${timestamp}`,
+      timestamp,
+    };
+    setNotifications((prev) => [notification, ...prev.slice(0, 9)]);
+    // Uncomment the following block if you create the 'notifications' table and want to store in DB
+    /*
+    if (user) {
+      try {
+        await supabase.from('notifications').insert({
+          id: notification.id,
+          message: notification.message,
+          timestamp: notification.timestamp,
+          user_id: user.id,
+        });
+      } catch (error) {
+        console.error('Error saving notification to DB:', error);
       }
+    }
+    */
+  };
 
-      console.log('Fetched auth user:', authUser);
-      const { data: userData, error: userError } = await supabase
-        .from('users')
+  const fetchUser = useCallback(async () => {
+    const authUser = session.user;
+    if (!authUser) {
+      console.log('No auth user, redirecting to /auth');
+      navigate('/auth');
+      return null;
+    }
+
+    console.log('Fetched auth user:', authUser);
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authUser.id)
+      .single();
+    if (userError) {
+      console.error('Error fetching user:', userError);
+      addNotification(`${t('userFetchFailed')}: ${userError.message}`);
+      return null;
+    }
+    console.log('User data:', userData);
+    return userData as User;
+  }, [session, navigate, t]);
+
+  const fetchTasks = useCallback(
+    async (userId: string) => {
+      setIsLoading(true);
+      const { data: tasksData, error } = await supabase
+        .from('tasks')
         .select('*')
-        .eq('id', authUser.id)
-        .single();
-      if (userError) {
-        console.error('Error fetching user:', userError);
-        addNotification(`Failed to fetch user: ${userError.message}`);
+        .eq('user_id', userId)
+        .order('task_order', { ascending: true });
+      setIsLoading(false);
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        if (error.code === '42P01') { // Table does not exist
+          addNotification('Tasks table not found. Please create the table in Supabase.');
+        } else {
+          addNotification(`${t('taskFetchFailed')}: ${error.message}`);
+        }
         return;
       }
-      setUser(userData);
-      addNotification(`Welcome back, ${userData.name}!`);
+      setTasks(tasksData || []);
+    },
+    [t]
+  );
 
-      await fetchTasks(authUser.id);
+  useEffect(() => {
+    let mounted = true;
+
+    const initialize = async () => {
+      const userData = await fetchUser();
+      if (!mounted || !userData) return;
+
+      setUser(userData);
+      if (!hasWelcomed) {
+        const welcomeMessage = t('welcomeBackName').includes('{name}')
+          ? t('welcomeBackName').replace('{name}', userData.name || 'User')
+          : `Welcome back, ${userData.name || 'User'}!`;
+        console.log('Translated welcomeBackName:', t('welcomeBackName'), 'Final message:', welcomeMessage);
+        addNotification(welcomeMessage);
+        setHasWelcomed(true);
+      }
+      await fetchTasks(userData.id);
     };
 
-    fetchUserAndTasks();
+    initialize();
+
+    return () => {
+      mounted = false;
+    };
+  }, [fetchUser, fetchTasks, t, hasWelcomed]);
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log('Auth state changed:', event, newSession);
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setTasks([]);
+        setNotifications([]);
+        setHasWelcomed(false);
+        navigate('/auth');
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleSignOut = async () => {
     if (user) {
-      addNotification(`Goodbye, ${user.name}!`);
+      addNotification(t('goodbye').replace('{name}', user.name || 'User'));
     }
     console.log('Signing out');
     await supabase.auth.signOut();
     console.log('Sign-out complete');
-    setUser(null);
-    setTasks([]);
-    navigate('/auth');
   };
 
-  const addNotification = (message: string) => {
-    setNotifications((prev) => [message, ...prev.slice(0, 9)]);
-  };
-
-  const handleCreateTask = async (task: Omit<Task, 'id' | 'task_order' | 'user_id'>) => {
+  const handleCreateTask = async (task: Omit<Task, 'id' | 'user_id' | 'task_order'>) => {
     if (!user) {
-      addNotification('Please log in to create tasks.');
+      addNotification(t('loginRequired'));
       return;
     }
 
@@ -99,106 +189,164 @@ const Index = () => {
       id: crypto.randomUUID(),
       user_id: user.id,
       task_order: tasks.length,
+      date: new Date().toISOString().split('T')[0], // Default to today
+      start_time: '09:00', // Default start time
+      end_time: '17:00', // Default end time
+      category: 'Personal', // Default category from union type
+      completed: false,
+      paused: false,
+      reminder: false,
+      priority: 'Medium', // Default priority from union type
     };
 
     console.log('Creating task:', newTask);
-    const { error } = await supabase.from('tasks').insert(newTask);
-    if (error) {
-      console.error('Error creating task:', error);
-      addNotification(`Failed to create task: ${error.message}`);
-      return;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.from('tasks').insert([newTask]).select();
+      setIsLoading(false);
+      if (error) {
+        console.error('Error creating task:', error);
+        if (error.code === '42P01') {
+          addNotification('Tasks table not found. Please create the table in Supabase.');
+        } else if (error.code === '42501') {
+          addNotification('Permission denied. Please check RLS policies in Supabase.');
+        } else {
+          addNotification(`${t('taskCreateFailed')}: ${error.message}`);
+        }
+        return;
+      }
+      console.log('Task created:', data);
+      await fetchTasks(user.id);
+      setIsTaskModalOpen(false);
+      addNotification(`${t('taskCreated').replace('{name}', task.name)}`);
+    } catch (err) {
+      setIsLoading(false);
+      console.error('Unexpected error creating task:', err);
+      addNotification(`${t('taskCreateFailed')}: ${err.message || 'Unknown error'}`);
     }
-
-    await fetchTasks(user.id); // Refetch tasks to ensure consistency
-    setIsTaskModalOpen(false);
-    addNotification(`Task "${task.name}" created successfully!`);
   };
 
   const handleImportTask = async (task: Task) => {
     if (!user) return;
     const newTask = { ...task, user_id: user.id };
-    const { error } = await supabase.from('tasks').insert(newTask);
+    setIsLoading(true);
+    const { error } = await supabase.from('tasks').insert([newTask]);
+    setIsLoading(false);
     if (error) {
       console.error('Error importing task:', error);
-      addNotification(`Failed to import task: ${error.message}`);
+      if (error.code === '42P01') {
+        addNotification('Tasks table not found. Please create the table in Supabase.');
+      } else {
+        addNotification(`${t('taskImportFailed')}: ${error.message}`);
+      }
       return;
     }
     await fetchTasks(user.id);
-    addNotification(`Task "${task.name}" imported successfully!`);
+    addNotification(`${t('taskImported').replace('{name}', task.name)}`);
   };
 
   const handleToggleTask = async (id: string) => {
     const taskToToggle = tasks.find((task) => task.id === id);
     if (!taskToToggle) return;
     const updatedTask = { ...taskToToggle, completed: !taskToToggle.completed };
+    setIsLoading(true);
     const { error } = await supabase
       .from('tasks')
       .update({ completed: updatedTask.completed })
       .eq('id', id);
+    setIsLoading(false);
     if (error) {
       console.error('Error toggling task:', error);
-      addNotification(`Failed to toggle task: ${error.message}`);
+      if (error.code === '42P01') {
+        addNotification('Tasks table not found. Please create the table in Supabase.');
+      } else {
+        addNotification(`${t('taskToggleFailed')}: ${error.message}`);
+      }
       return;
     }
     setTasks(tasks.map((task) => (task.id === id ? updatedTask : task)));
-    addNotification(`Task "${taskToToggle.name}" ${updatedTask.completed ? 'completed' : 'reopened'}!`);
+    addNotification(
+      `${t(updatedTask.completed ? 'taskCompleted' : 'taskReopened').replace('{name}', taskToToggle.name)}`
+    );
   };
 
   const handlePauseTask = async (id: string) => {
     const taskToPause = tasks.find((task) => task.id === id);
     if (!taskToPause) return;
     const updatedTask = { ...taskToPause, paused: !taskToPause.paused };
+    setIsLoading(true);
     const { error } = await supabase
       .from('tasks')
       .update({ paused: updatedTask.paused })
       .eq('id', id);
+    setIsLoading(false);
     if (error) {
       console.error('Error pausing task:', error);
-      addNotification(`Failed to pause task: ${error.message}`);
+      if (error.code === '42P01') {
+        addNotification('Tasks table not found. Please create the table in Supabase.');
+      } else {
+        addNotification(`${t('taskPauseFailed')}: ${error.message}`);
+      }
       return;
     }
     setTasks(tasks.map((task) => (task.id === id ? updatedTask : task)));
-    addNotification(`Task "${taskToPause.name}" ${updatedTask.paused ? 'paused' : 'resumed'}!`);
+    addNotification(
+      `${t(updatedTask.paused ? 'taskPaused' : 'taskResumed').replace('{name}', taskToPause.name)}`
+    );
   };
 
   const handleDeleteTask = async (id: string) => {
     const taskToDelete = tasks.find((task) => task.id === id);
     if (!taskToDelete) return;
+    setIsLoading(true);
     const { error } = await supabase.from('tasks').delete().eq('id', id);
+    setIsLoading(false);
     if (error) {
       console.error('Error deleting task:', error);
-      addNotification(`Failed to delete task: ${error.message}`);
+      if (error.code === '42P01') {
+        addNotification('Tasks table not found. Please create the table in Supabase.');
+      } else {
+        addNotification(`${t('taskDeleteFailed')}: ${error.message}`);
+      }
       return;
     }
     setTasks(tasks.filter((task) => task.id !== id));
-    addNotification(`Task "${taskToDelete.name}" deleted!`);
+    addNotification(`${t('taskDeleted').replace('{name}', taskToDelete.name)}`);
   };
 
   const handleReorderTasks = async (newTasks: Task[]) => {
     const updatedTasks = newTasks.map((task, index) => ({ ...task, task_order: index }));
+    setIsLoading(true);
     const { error } = await supabase
       .from('tasks')
       .upsert(updatedTasks, { onConflict: 'id' });
+    setIsLoading(false);
     if (error) {
       console.error('Error reordering tasks:', error);
-      addNotification(`Failed to reorder tasks: ${error.message}`);
+      if (error.code === '42P01') {
+        addNotification('Tasks table not found. Please create the table in Supabase.');
+      } else {
+        addNotification(`${t('taskReorderFailed')}: ${error.message}`);
+      }
       return;
     }
     setTasks(updatedTasks);
   };
 
   const updateUserProfile = async (updatedUser: User) => {
+    setIsLoading(true);
     const { error } = await supabase
       .from('users')
       .update({ name: updatedUser.name, preferences: updatedUser.preferences })
       .eq('id', updatedUser.id);
+    setIsLoading(false);
     if (error) {
       console.error('Error updating profile:', error);
-      addNotification(`Failed to update profile: ${error.message}`);
+      addNotification(`${t('profileUpdateFailed')}: ${error.message}`);
       return;
     }
     setUser(updatedUser);
-    addNotification('Profile updated successfully!');
+    addNotification(t('profileUpdated'));
   };
 
   const handleEditTask = (task: Task) => {
@@ -207,19 +355,25 @@ const Index = () => {
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
+    setIsLoading(true);
     const { error } = await supabase
       .from('tasks')
       .update(updatedTask)
       .eq('id', updatedTask.id);
+    setIsLoading(false);
     if (error) {
       console.error('Error updating task:', error);
-      addNotification(`Failed to update task: ${error.message}`);
+      if (error.code === '42P01') {
+        addNotification('Tasks table not found. Please create the table in Supabase.');
+      } else {
+        addNotification(`${t('taskUpdateFailed')}: ${error.message}`);
+      }
       return;
     }
     setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
     setIsEditModalOpen(false);
     setEditingTask(null);
-    addNotification(`Task "${updatedTask.name}" updated successfully!`);
+    addNotification(`${t('taskUpdated').replace('{name}', updatedTask.name)}`);
   };
 
   const handleShowHistory = (task: Task) => {
@@ -235,16 +389,13 @@ const Index = () => {
   const handleRestoreVersion = async (task: Task) => {
     await handleUpdateTask(task);
     setIsHistoryModalOpen(false);
-    addNotification(`Task "${task.name}" restored from history!`);
+    addNotification(`${t('taskRestored').replace('{name}', task.name)}`);
   };
-
-  if (!user) {
-    return null; // App.tsx handles redirect to /auth
-  }
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 transition-all duration-300">
+        {isLoading && <div>Loading...</div>}
         <AppSidebar
           onAddTask={() => setIsTaskModalOpen(true)}
           user={user}
@@ -312,6 +463,7 @@ const Index = () => {
           isOpen={isTaskModalOpen}
           onClose={() => setIsTaskModalOpen(false)}
           onCreateTask={handleCreateTask}
+          aria-describedby="task-modal-description"
         />
         <EditTaskModal
           isOpen={isEditModalOpen}
@@ -321,6 +473,7 @@ const Index = () => {
           }}
           onUpdateTask={handleUpdateTask}
           task={editingTask}
+          aria-describedby="edit-task-modal-description"
         />
         <TaskHistoryModal
           isOpen={isHistoryModalOpen}
@@ -330,6 +483,7 @@ const Index = () => {
           }}
           task={selectedTaskForHistory}
           onRestoreVersion={handleRestoreVersion}
+          aria-describedby="task-history-modal-description"
         />
         <ShareTaskModal
           isOpen={isShareModalOpen}
@@ -338,6 +492,7 @@ const Index = () => {
             setSelectedTaskForShare(null);
           }}
           task={selectedTaskForShare}
+          aria-describedby="share-task-modal-description"
         />
       </div>
     </SidebarProvider>

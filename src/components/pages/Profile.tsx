@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,11 +18,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTheme } from '@/components/ThemeProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { User, Task } from '@/lib/types';
+import { supabase } from '@/lib/supabaseClient';
+
+interface Notification {
+  id: string;
+  message: string;
+  timestamp: string;
+}
 
 interface ProfileProps {
   user: User | null;
   tasks: Task[];
-  notifications: string[];
+  notifications: Notification[];
   onUpdateProfile: (updatedUser: User) => void;
   onClearNotifications: () => void;
   onImportTask?: (task: Task) => void;
@@ -40,6 +47,9 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
   const [notificationsEnabled, setNotificationsEnabled] = useState(user?.preferences.notifications || false);
   const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(user?.preferences.emailReminders || false);
 
+  // Deduplicate notifications by id
+  const uniqueNotifications = Array.from(new Map(notifications.map(n => [n.id, n])).values());
+
   const languages = [
     { value: 'en', label: 'English', flag: '🇺🇸' },
     { value: 'hi', label: 'हिंदी', flag: '🇮🇳' },
@@ -55,8 +65,61 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
     { value: 'ko', label: '한국어', flag: '🇰🇷' },
   ];
 
+  const updateNotificationPreference = useCallback(async (enabled: boolean) => {
+    if (!user) {
+      toast({
+        title: t('error'),
+        description: t('loginRequired'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          preferences: {
+            ...user.preferences,
+            notifications: enabled,
+          },
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setNotificationsEnabled(enabled);
+      onUpdateProfile({
+        ...user,
+        preferences: {
+          ...user.preferences,
+          notifications: enabled,
+        },
+      });
+
+      toast({
+        title: t('success'),
+        description: enabled ? t('notificationsEnabled') : t('notificationsDisabled'),
+      });
+    } catch (error) {
+      console.error('Error updating notification preference:', error);
+      toast({
+        title: t('error'),
+        description: t('failedToUpdateNotifications'),
+        variant: 'destructive',
+      });
+    }
+  }, [user, onUpdateProfile, t, toast]);
+
   const handleUpdateProfile = () => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: t('error'),
+        description: t('loginRequired'),
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const updatedUser: User = {
       ...user,
@@ -65,7 +128,7 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
       avatar,
       signup_date: user.signup_date,
       preferences: {
-        theme: theme as 'light' | 'dark' | 'system',
+        theme: theme || 'system',
         notifications: notificationsEnabled,
         emailReminders: emailRemindersEnabled,
       },
@@ -81,7 +144,7 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
     onClearNotifications();
     toast({
       title: t('notifications'),
-      description: 'Notifications cleared',
+      description: t('notificationsCleared'),
     });
   };
 
@@ -149,7 +212,7 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">{t('profile')}</h1>
-          <p className="text-muted-foreground">Manage your profile settings and preferences.</p>
+          <p className="text-muted-foreground">{t('manageProfile')}</p>
         </div>
       </div>
 
@@ -189,7 +252,7 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
                 <p className="text-lg font-semibold">{user?.name}</p>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
                 <p className="text-sm text-muted-foreground">
-                  Joined {user?.signup_date ? new Date(user.signup_date).toLocaleDateString() : 'N/A'}
+                  {t('joined')} {user?.signup_date ? new Date(user.signup_date).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -312,18 +375,18 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
               <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                 <div className="space-y-0.5">
                   <p className="text-sm font-medium">{t('notifications')}</p>
-                  <p className="text-xs text-muted-foreground">Get notified on new tasks and updates.</p>
+                  <p className="text-xs text-muted-foreground">{t('notificationDesc')}</p>
                 </div>
                 <Switch
                   id="notifications"
                   checked={notificationsEnabled}
-                  onCheckedChange={setNotificationsEnabled}
+                  onCheckedChange={updateNotificationPreference}
                 />
               </div>
               <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                 <div className="space-y-0.5">
                   <p className="text-sm font-medium">{t('emailReminders')}</p>
-                  <p className="text-xs text-muted-foreground">Receive daily task reminders via email.</p>
+                  <p className="text-xs text-muted-foreground">{t('emailReminderDesc')}</p>
                 </div>
                 <Switch
                   id="email-reminders"
@@ -346,20 +409,23 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
           <CardContent className="space-y-4">
             <ScrollArea className="h-[200px] w-full rounded-md border">
               <div className="p-3">
-                {notifications.length > 0 ? (
-                  notifications.map((notification, index) => (
-                    <div key={index} className="mb-2 flex items-center justify-between">
-                      <p className="text-sm">{notification}</p>
+                {uniqueNotifications.length > 0 ? (
+                  uniqueNotifications.map((notification) => (
+                    <div key={notification.id} className="mb-2 flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <p className="text-sm">{notification.message}</p>
+                        <p className="text-xs text-muted-foreground">{notification.timestamp}</p>
+                      </div>
                       <CheckCircle className="h-4 w-4 text-green-500" />
                     </div>
                   ))
                 ) : (
-                  <div className="text-center text-muted-foreground">No notifications yet.</div>
+                  <div className="text-center text-muted-foreground">{t('noNotifications')}</div>
                 )}
               </div>
             </ScrollArea>
             <Button variant="secondary" onClick={handleClearNotifications}>
-              Clear Notifications
+              {t('clearNotifications')}
             </Button>
           </CardContent>
         </Card>
@@ -368,7 +434,7 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
       {/* Task Stats */}
       <Card className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
         <CardHeader>
-          <CardTitle>{t('totalTasks')} Overview</CardTitle>
+          <CardTitle>{t('totalTasks')} {t('overview')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

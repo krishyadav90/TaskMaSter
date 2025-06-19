@@ -1,48 +1,63 @@
-
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MoreHorizontal, TrendingUp, Clock, Target } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import type { Task } from '@/pages/Index';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import type { Task } from '@/lib/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AnalyticsDashboardProps {
   tasks: Task[];
 }
 
 const AnalyticsDashboard = ({ tasks }: AnalyticsDashboardProps) => {
+  const { t } = useLanguage();
+
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(task => task.completed).length;
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
   
-  // Sample data for charts (in a real app, this would be calculated from actual task data)
-  const weeklyData = [
-    { day: 'S', value: 8 },
-    { day: 'M', value: 12 },
-    { day: 'T', value: 10 },
-    { day: 'W', value: 15 },
-    { day: 'T', value: 13 },
-    { day: 'F', value: 16 },
-    { day: 'S', value: 11 }
-  ];
+  // Weekly data (computed from tasks instead of static)
+  const weeklyData = useMemo(() => {
+    const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    return days.map((day, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - index));
+      const dayTasks = tasks.filter(task => 
+        new Date(task.date).toDateString() === date.toDateString()
+      );
+      return { day, value: dayTasks.length };
+    });
+  }, [tasks]);
 
-  const activityData = [
-    { time: '6', value: 2 },
-    { time: '8', value: 5 },
-    { time: '10', value: 8 },
-    { time: '12', value: 12 },
-    { time: '14', value: 15 },
-    { time: '16', value: 11 },
-    { time: '18', value: 7 },
-    { time: '20', value: 4 }
-  ];
+  // Activity data (tasks by hour)
+  const activityData = useMemo(() => {
+    const hours = [6, 8, 10, 12, 14, 16, 18, 20];
+    return hours.map(hour => {
+      const hourTasks = tasks.filter(task => {
+        const taskHour = parseInt(task.start_time.split(':')[0], 10);
+        return taskHour >= hour && taskHour < hour + 2;
+      });
+      return { time: hour.toString(), value: hourTasks.length };
+    });
+  }, [tasks]);
 
-  const categoryCounts = {
-    Study: tasks.filter(t => t.category === 'Study').length,
-    Productive: tasks.filter(t => t.category === 'Productive').length,
-    Life: tasks.filter(t => t.category === 'Life').length
-  };
+  // Category breakdown
+  const categories = useMemo(() => [
+    { key: 'Study', label: t('study'), dbValue: 'Study' },
+    { key: 'Productive', label: t('productive'), dbValue: 'Productive' },
+    { key: 'Life', label: t('life'), dbValue: 'Life' },
+  ], [t]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    categories.forEach(cat => {
+      counts[cat.key] = tasks.filter(t => t.category === cat.dbValue).length;
+    });
+    return counts;
+  }, [tasks, categories]);
 
   const missingTasks = tasks.filter(t => !t.completed && new Date(t.date) < new Date()).length;
   const onTimeTasks = tasks.filter(t => t.completed).length;
@@ -51,7 +66,7 @@ const AnalyticsDashboard = ({ tasks }: AnalyticsDashboardProps) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-800">Data Report</h1>
+        <h1 className="text-3xl font-bold text-gray-800">{t('dataReport')}</h1>
         <Button variant="ghost" size="icon">
           <MoreHorizontal className="h-5 w-5" />
         </Button>
@@ -63,9 +78,9 @@ const AnalyticsDashboard = ({ tasks }: AnalyticsDashboardProps) => {
         <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">All Activity</span>
+              <span className="text-sm text-gray-600">{t('allActivity')}</span>
               <Badge variant="secondary" className="bg-gray-100 text-gray-600">
-                Activity
+                {t('activity')}
               </Badge>
             </div>
             <div className="text-2xl font-bold text-gray-800 mb-2">{totalTasks}</div>
@@ -86,7 +101,7 @@ const AnalyticsDashboard = ({ tasks }: AnalyticsDashboardProps) => {
         <Card className="bg-gradient-to-br from-red-400 to-red-500 text-white border-0 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-white/80">Complete</span>
+              <span className="text-sm text-white/80">{t('completed')}</span>
               <Badge className="bg-white/20 text-white border-0">
                 {Math.round(completionRate)}%
               </Badge>
@@ -131,7 +146,7 @@ const AnalyticsDashboard = ({ tasks }: AnalyticsDashboardProps) => {
         <Card className="bg-gradient-to-br from-pink-400 to-pink-500 text-white border-0 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-white/80">Missing</span>
+              <span className="text-sm text-white/80">{t('missing')}</span>
             </div>
             <div className="text-2xl font-bold mb-4">{missingTasks}</div>
             <div className="relative">
@@ -154,15 +169,19 @@ const AnalyticsDashboard = ({ tasks }: AnalyticsDashboardProps) => {
                     strokeWidth="4"
                     strokeLinecap="round"
                     strokeDasharray={163}
-                    strokeDashoffset={163 - (163 * 25) / 100}
+                    strokeDashoffset={163 - (163 * (missingTasks / totalTasks || 0)) / 100}
                     className="transition-all duration-500"
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-bold">25%</span>
+                  <span className="text-xs font-bold">
+                    {Math.round((missingTasks / totalTasks || 0) * 100)}%
+                  </span>
                 </div>
               </div>
-              <p className="text-center text-xs text-white/80 mt-1">10/35</p>
+              <p className="text-center text-xs text-white/80 mt-1">
+                {missingTasks}/{totalTasks}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -171,7 +190,7 @@ const AnalyticsDashboard = ({ tasks }: AnalyticsDashboardProps) => {
         <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">On Time</span>
+              <span className="text-sm text-gray-600">{t('onTime')}</span>
             </div>
             <div className="text-2xl font-bold text-gray-800 mb-4">{onTimeTasks}</div>
             <div className="space-y-1">
@@ -182,7 +201,7 @@ const AnalyticsDashboard = ({ tasks }: AnalyticsDashboardProps) => {
                 </div>
               ))}
             </div>
-            <div className="text-sm text-gray-500 mt-2">Activity</div>
+            <div className="text-sm text-gray-500 mt-2">{t('activity')}</div>
           </CardContent>
         </Card>
       </div>
@@ -191,16 +210,16 @@ const AnalyticsDashboard = ({ tasks }: AnalyticsDashboardProps) => {
       <Card className="bg-gradient-to-br from-blue-600 to-purple-700 text-white border-0 shadow-xl">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-white">Results Activity</CardTitle>
-            <div className="text-2xl font-bold mt-1">12</div>
+            <CardTitle className="text-white">{t('resultsActivity')}</CardTitle>
+            <div className="text-2xl font-bold mt-1">{completedTasks}</div>
           </div>
           <Select defaultValue="weekly">
             <SelectTrigger className="w-24 bg-white/20 border-0 text-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="weekly">{t('weekly')}</SelectItem>
+              <SelectItem value="monthly">{t('monthly')}</SelectItem>
             </SelectContent>
           </Select>
         </CardHeader>
@@ -239,26 +258,18 @@ const AnalyticsDashboard = ({ tasks }: AnalyticsDashboardProps) => {
 
       {/* Category Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-pink-400 to-pink-500 text-white border-0 shadow-lg">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold mb-1">{categoryCounts.Study}</div>
-            <div className="text-sm text-white/80">Study Tasks</div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-red-400 to-red-500 text-white border-0 shadow-lg">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold mb-1">{categoryCounts.Productive}</div>
-            <div className="text-sm text-white/80">Productive Tasks</div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-blue-400 to-blue-500 text-white border-0 shadow-lg">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold mb-1">{categoryCounts.Life}</div>
-            <div className="text-sm text-white/80">Life Tasks</div>
-          </CardContent>
-        </Card>
+        {categories.map(({ key, label }) => (
+          <Card key={key} className={`bg-gradient-to-br ${
+            key === 'Study' ? 'from-pink-400 to-pink-500' :
+            key === 'Productive' ? 'from-red-400 to-red-500' :
+            'from-blue-400 to-blue-500'
+          } text-white border-0 shadow-lg`}>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold mb-1">{categoryCounts[key]}</div>
+              <div className="text-sm text-white/80">{label}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

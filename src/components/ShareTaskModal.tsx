@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Share2, Copy, Mail, Users } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import type { Task } from '@/pages/Index';
+import type { Task } from '@/lib/types';
 
 interface ShareTaskModalProps {
   isOpen: boolean;

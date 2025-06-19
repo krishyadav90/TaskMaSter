@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import { CalendarIcon, Clock, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { Task } from '@/pages/Index';
+import type { Task } from '@/lib/types';
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -37,17 +36,17 @@ const EditTaskModal = ({ isOpen, onClose, onUpdateTask, task }: EditTaskModalPro
   useEffect(() => {
     if (task) {
       setTaskName(task.name);
-      setSelectedDate(task.date);
-      setStartTime(task.startTime);
-      setEndTime(task.endTime);
+      setSelectedDate(new Date(task.date)); // Parse string to Date
+      setStartTime(task.start_time); // Use start_time
+      setEndTime(task.end_time); // Use end_time
       setReminder(task.reminder);
       setCategory(task.category);
       setPriority(task.priority);
-      setDeadline(task.deadline);
+      setDeadline(task.deadline ? new Date(task.deadline) : undefined); // Parse string to Date or undefined
     }
   }, [task]);
 
-  const categories: Array<{value: 'Study' | 'Productive' | 'Life' | 'Work' | 'Health' | 'Personal', label: string, color: string, icon: string}> = [
+  const categories: Array<{ value: 'Study' | 'Productive' | 'Life' | 'Work' | 'Health' | 'Personal', label: string, color: string, icon: string }> = [
     { value: 'Study', label: 'Study', color: 'bg-pink-500 hover:bg-pink-600', icon: '📚' },
     { value: 'Work', label: 'Work', color: 'bg-blue-500 hover:bg-blue-600', icon: '💼' },
     { value: 'Health', label: 'Health', color: 'bg-green-500 hover:bg-green-600', icon: '🏃' },
@@ -56,7 +55,7 @@ const EditTaskModal = ({ isOpen, onClose, onUpdateTask, task }: EditTaskModalPro
     { value: 'Life', label: 'Life', color: 'bg-indigo-500 hover:bg-indigo-600', icon: '🏠' }
   ];
 
-  const priorities: Array<{value: 'Low' | 'Medium' | 'High', label: string, color: string, icon: string}> = [
+  const priorities: Array<{ value: 'Low' | 'Medium' | 'High', label: string, color: string, icon: string }> = [
     { value: 'Low', label: 'Low', color: 'bg-gray-500 hover:bg-gray-600', icon: '⬇️' },
     { value: 'Medium', label: 'Medium', color: 'bg-yellow-500 hover:bg-yellow-600', icon: '➡️' },
     { value: 'High', label: 'High', color: 'bg-red-500 hover:bg-red-600', icon: '⬆️' }
@@ -68,12 +67,12 @@ const EditTaskModal = ({ isOpen, onClose, onUpdateTask, task }: EditTaskModalPro
     const updatedTask: Task = {
       ...task,
       name: taskName,
-      date: selectedDate,
-      startTime,
-      endTime,
+      date: selectedDate.toISOString(), // Convert Date to ISO string
+      start_time: startTime, // Use start_time
+      end_time: endTime, // Use end_time
       category,
       priority,
-      deadline,
+      deadline: deadline ? deadline.toISOString() : undefined, // Convert Date to ISO string or undefined
       reminder
     };
 

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Progress } from '@/components/ui/progress';
@@ -36,14 +37,22 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
   const weeklyCompleted = weeklyTasks.filter(task => task.completed).length;
 
   // Category breakdown
-  const categoryStats = {
-    Study: tasks.filter(task => task.category === t('study')),
-    Work: tasks.filter(task => task.category === t('work')),
-    Health: tasks.filter(task => task.category === t('health')),
-    Personal: tasks.filter(task => task.category === t('personal')),
-    Productive: tasks.filter(task => task.category === t('productive')),
-    Life: tasks.filter(task => task.category === t('life')),
-  };
+  const categories = useMemo(() => [
+    { key: 'Study', label: t('study'), dbValue: 'Study' },
+    { key: 'Work', label: t('work'), dbValue: 'Work' },
+    { key: 'Health', label: t('health'), dbValue: 'Health' },
+    { key: 'Personal', label: t('personal'), dbValue: 'Personal' },
+    { key: 'Productive', label: t('productive'), dbValue: 'Productive' },
+    { key: 'Life', label: t('life'), dbValue: 'Life' },
+  ], [t]);
+
+  const categoryStats = useMemo(() => {
+    const stats: Record<string, Task[]> = {};
+    categories.forEach(cat => {
+      stats[cat.key] = tasks.filter(task => task.category === cat.dbValue);
+    });
+    return stats;
+  }, [tasks, categories]);
 
   // Daily completion for the last 7 days
   const dailyStats = Array.from({ length: 7 }, (_, i) => {
@@ -135,29 +144,30 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {Object.entries(categoryStats).map(([category, categoryTasks]) => {
+            {categories.map(({ key, label, dbValue }) => {
+              const categoryTasks = categoryStats[key];
               const categoryCompleted = categoryTasks.filter(task => task.completed).length;
               const categoryTotal = categoryTasks.length;
               const categoryRate = categoryTotal > 0 ? (categoryCompleted / categoryTotal) * 100 : 0;
               
               const getCategoryColor = (cat: string) => {
                 switch (cat) {
-                  case t('study'): return 'bg-pink-500';
-                  case t('work'): return 'bg-blue-500';
-                  case t('health'): return 'bg-green-500';
-                  case t('personal'): return 'bg-purple-500';
-                  case t('productive'): return 'bg-orange-500';
-                  case t('life'): return 'bg-indigo-500';
+                  case 'Study': return 'bg-pink-500';
+                  case 'Work': return 'bg-blue-500';
+                  case 'Health': return 'bg-green-500';
+                  case 'Personal': return 'bg-purple-500';
+                  case 'Productive': return 'bg-orange-500';
+                  case 'Life': return 'bg-indigo-500';
                   default: return 'bg-gray-500';
                 }
               };
 
               return (
-                <div key={category} className="space-y-2">
+                <div key={key} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${getCategoryColor(category)}`} />
-                      <span className="font-medium">{category}</span>
+                      <div className={`w-3 h-3 rounded-full ${getCategoryColor(key)}`} />
+                      <span className="font-medium">{label}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">
@@ -211,15 +221,15 @@ const Analytics = ({ tasks, user }: AnalyticsProps) => {
                     <Badge 
                       variant="outline" 
                       className={
-                        task.category === t('study') ? 'bg-pink-50 text-pink-700 border-pink-200' :
-                        task.category === t('work') ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                        task.category === t('health') ? 'bg-green-50 text-green-700 border-green-200' :
-                        task.category === t('personal') ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                        task.category === t('productive') ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                        task.category === 'Study' ? 'bg-pink-50 text-pink-700 border-pink-200' :
+                        task.category === 'Work' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        task.category === 'Health' ? 'bg-green-50 text-green-700 border-green-200' :
+                        task.category === 'Personal' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                        task.category === 'Productive' ? 'bg-orange-50 text-orange-700 border-orange-200' :
                         'bg-indigo-50 text-indigo-700 border-indigo-200'
                       }
                     >
-                      {task.category}
+                      {t(task.category.toLowerCase())}
                     </Badge>
                   </div>
                 ))}

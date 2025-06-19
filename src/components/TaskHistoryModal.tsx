@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, History, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { Task } from '@/pages/Index';
+import type { Task } from '@/lib/types';
 
 interface TaskVersion {
   id: string;
@@ -113,9 +112,9 @@ const TaskHistoryModal = ({ isOpen, onClose, task, onRestoreVersion }: TaskHisto
                         {version.task.name}
                       </h4>
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 flex-wrap">
-                        <span>{format(version.task.date, 'MMM dd')}</span>
+                        <span>{format(new Date(version.task.date), 'MMM dd')}</span>
                         <span>•</span>
-                        <span>{version.task.startTime} - {version.task.endTime}</span>
+                        <span>{version.task.start_time} - {version.task.end_time}</span>
                         <span>•</span>
                         <Badge variant="outline" className="text-xs">
                           {version.task.category}

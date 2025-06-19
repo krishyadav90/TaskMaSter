@@ -24,7 +24,7 @@ import {
   LogOut,
   Info
 } from 'lucide-react';
-import type { User as UserType } from '@/pages/Index';
+import type { User as UserType } from '@/lib/types';
 
 interface AppSidebarProps {
   onAddTask: () => void;
