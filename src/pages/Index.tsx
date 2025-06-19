@@ -16,7 +16,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Session } from '@supabase/supabase-js';
-import { Task, User } from '@/lib/types'; // Use imported types
+import { Task, User } from '@/lib/types';
+import { isValidUUID, generateUUID } from '@/lib/utils';
 
 interface Notification {
   id: string;
@@ -55,7 +56,7 @@ const Index = ({ session }: IndexProps) => {
   };
 
   const addNotification = (message: string) => {
-    if (!user?.preferences.notifications) return;
+    if (!user?.preferences?.notifications) return;
     const timestamp = formatTimestamp();
     const notification: Notification = {
       id: crypto.randomUUID(),
@@ -63,21 +64,6 @@ const Index = ({ session }: IndexProps) => {
       timestamp,
     };
     setNotifications((prev) => [notification, ...prev.slice(0, 9)]);
-    // Uncomment the following block if you create the 'notifications' table and want to store in DB
-    /*
-    if (user) {
-      try {
-        await supabase.from('notifications').insert({
-          id: notification.id,
-          message: notification.message,
-          timestamp: notification.timestamp,
-          user_id: user.id,
-        });
-      } catch (error) {
-        console.error('Error saving notification to DB:', error);
-      }
-    }
-    */
   };
 
   const fetchUser = useCallback(async () => {
@@ -108,20 +94,25 @@ const Index = ({ session }: IndexProps) => {
       setIsLoading(true);
       const { data: tasksData, error } = await supabase
         .from('tasks')
-        .select('*')
+        .select('id, user_id, name, date, start_time, end_time, category, completed, paused, reminder, priority, task_order')
         .eq('user_id', userId)
         .order('task_order', { ascending: true });
       setIsLoading(false);
       if (error) {
         console.error('Error fetching tasks:', error);
-        if (error.code === '42P01') { // Table does not exist
+        if (error.code === '42P01') {
           addNotification('Tasks table not found. Please create the table in Supabase.');
         } else {
           addNotification(`${t('taskFetchFailed')}: ${error.message}`);
         }
         return;
       }
-      setTasks(tasksData || []);
+      const validatedTasks = tasksData.map((task: Task) => ({
+        ...task,
+        id: isValidUUID(task.id) ? task.id : generateUUID(),
+        name: task.name || 'Untitled Task', // Ensure name is not null
+      }));
+      setTasks(validatedTasks || []);
     },
     [t]
   );
@@ -184,19 +175,24 @@ const Index = ({ session }: IndexProps) => {
       return;
     }
 
+    if (!task.name || task.name.trim() === '') {
+      addNotification(t('invalidTaskName'));
+      return;
+    }
+
     const newTask: Task = {
       ...task,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       user_id: user.id,
       task_order: tasks.length,
-      date: new Date().toISOString().split('T')[0], // Default to today
-      start_time: '09:00', // Default start time
-      end_time: '17:00', // Default end time
-      category: 'Personal', // Default category from union type
-      completed: false,
-      paused: false,
-      reminder: false,
-      priority: 'Medium', // Default priority from union type
+      date: task.date || new Date().toISOString().split('T')[0],
+      start_time: task.start_time || '09:00',
+      end_time: task.end_time || '17:00',
+      category: task.category || 'Personal',
+      completed: task.completed ?? false,
+      paused: task.paused ?? false,
+      reminder: task.reminder ?? false,
+      priority: task.priority || 'Medium',
     };
 
     console.log('Creating task:', newTask);
@@ -218,7 +214,7 @@ const Index = ({ session }: IndexProps) => {
       console.log('Task created:', data);
       await fetchTasks(user.id);
       setIsTaskModalOpen(false);
-      addNotification(`${t('taskCreated').replace('{name}', task.name)}`);
+      addNotification(`${t('taskCreated').replace('{name}', newTask.name)}`);
     } catch (err) {
       setIsLoading(false);
       console.error('Unexpected error creating task:', err);
@@ -227,25 +223,65 @@ const Index = ({ session }: IndexProps) => {
   };
 
   const handleImportTask = async (task: Task) => {
-    if (!user) return;
-    const newTask = { ...task, user_id: user.id };
-    setIsLoading(true);
-    const { error } = await supabase.from('tasks').insert([newTask]);
-    setIsLoading(false);
-    if (error) {
-      console.error('Error importing task:', error);
-      if (error.code === '42P01') {
-        addNotification('Tasks table not found. Please create the table in Supabase.');
-      } else {
-        addNotification(`${t('taskImportFailed')}: ${error.message}`);
-      }
+    if (!user) {
+      addNotification(t('loginRequired'));
       return;
     }
-    await fetchTasks(user.id);
-    addNotification(`${t('taskImported').replace('{name}', task.name)}`);
+
+    if (!task.name || task.name.trim() === '') {
+      addNotification(t('invalidTaskName'));
+      return;
+    }
+
+    const newTask: Task = {
+      ...task,
+      id: isValidUUID(task.id) ? task.id : generateUUID(),
+      user_id: user.id,
+      name: task.name || 'Untitled Task', // Fallback name
+      date: task.date || new Date().toISOString().split('T')[0],
+      start_time: task.start_time || '09:00',
+      end_time: task.end_time || '17:00',
+      category: task.category || 'Personal',
+      completed: task.completed ?? false,
+      paused: task.paused ?? false,
+      reminder: task.reminder ?? false,
+      priority: task.priority || 'Medium',
+      task_order: task.task_order ?? tasks.length,
+    };
+
+    console.log('Importing task:', newTask);
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.from('tasks').insert([newTask]).select();
+      setIsLoading(false);
+      if (error) {
+        console.error('Error importing task:', error);
+        if (error.code === '42P01') {
+          addNotification('Tasks table not found. Please create the table in Supabase.');
+        } else if (error.code === '42501') {
+          addNotification('Permission denied. Please check RLS policies in Supabase.');
+        } else if (error.code === '23502') {
+          addNotification(`${t('taskImportFailed')}: Missing required field (name or date)`);
+        } else {
+          addNotification(`${t('taskImportFailed')}: ${error.message}`);
+        }
+        return;
+      }
+      console.log('Task imported:', data);
+      await fetchTasks(user.id);
+      addNotification(`${t('taskImported').replace('{name}', newTask.name || 'Untitled Task')}`);
+    } catch (err) {
+      setIsLoading(false);
+      console.error('Unexpected error importing task:', err);
+      addNotification(`${t('taskImportFailed')}: ${err.message || 'Unknown error'}`);
+    }
   };
 
   const handleToggleTask = async (id: string) => {
+    if (!isValidUUID(id)) {
+      addNotification(t('invalidTask'));
+      return;
+    }
     const taskToToggle = tasks.find((task) => task.id === id);
     if (!taskToToggle) return;
     const updatedTask = { ...taskToToggle, completed: !taskToToggle.completed };
@@ -271,6 +307,10 @@ const Index = ({ session }: IndexProps) => {
   };
 
   const handlePauseTask = async (id: string) => {
+    if (!isValidUUID(id)) {
+      addNotification(t('invalidTask'));
+      return;
+    }
     const taskToPause = tasks.find((task) => task.id === id);
     if (!taskToPause) return;
     const updatedTask = { ...taskToPause, paused: !taskToPause.paused };
@@ -296,6 +336,10 @@ const Index = ({ session }: IndexProps) => {
   };
 
   const handleDeleteTask = async (id: string) => {
+    if (!isValidUUID(id)) {
+      addNotification(t('invalidTask'));
+      return;
+    }
     const taskToDelete = tasks.find((task) => task.id === id);
     if (!taskToDelete) return;
     setIsLoading(true);
@@ -315,7 +359,12 @@ const Index = ({ session }: IndexProps) => {
   };
 
   const handleReorderTasks = async (newTasks: Task[]) => {
-    const updatedTasks = newTasks.map((task, index) => ({ ...task, task_order: index }));
+    const updatedTasks = newTasks.map((task, index) => ({
+      ...task,
+      id: isValidUUID(task.id) ? task.id : generateUUID(),
+      name: task.name || 'Untitled Task',
+      task_order: index,
+    }));
     setIsLoading(true);
     const { error } = await supabase
       .from('tasks')
@@ -350,11 +399,23 @@ const Index = ({ session }: IndexProps) => {
   };
 
   const handleEditTask = (task: Task) => {
+    if (!isValidUUID(task.id)) {
+      addNotification(t('invalidTask'));
+      return;
+    }
     setEditingTask(task);
     setIsEditModalOpen(true);
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
+    if (!isValidUUID(updatedTask.id)) {
+      addNotification(t('invalidTask'));
+      return;
+    }
+    if (!updatedTask.name || updatedTask.name.trim() === '') {
+      addNotification(t('invalidTaskName'));
+      return;
+    }
     setIsLoading(true);
     const { error } = await supabase
       .from('tasks')
@@ -377,16 +438,28 @@ const Index = ({ session }: IndexProps) => {
   };
 
   const handleShowHistory = (task: Task) => {
+    if (!isValidUUID(task.id)) {
+      addNotification(t('invalidTask'));
+      return;
+    }
     setSelectedTaskForHistory(task);
     setIsHistoryModalOpen(true);
   };
 
   const handleShareTask = (task: Task) => {
+    if (!isValidUUID(task.id)) {
+      addNotification(t('invalidTask'));
+      return;
+    }
     setSelectedTaskForShare(task);
     setIsShareModalOpen(true);
   };
 
   const handleRestoreVersion = async (task: Task) => {
+    if (!isValidUUID(task.id)) {
+      addNotification(t('invalidTask'));
+      return;
+    }
     await handleUpdateTask(task);
     setIsHistoryModalOpen(false);
     addNotification(`${t('taskRestored').replace('{name}', task.name)}`);
