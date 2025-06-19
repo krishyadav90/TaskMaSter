@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,6 +65,13 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
     { value: 'ko', label: '한국어', flag: '🇰🇷' },
   ];
 
+  // Sync avatar state with user prop only if different
+  useEffect(() => {
+    if (user?.avatar && user.avatar !== avatar) {
+      setAvatar(user.avatar);
+    }
+  }, [user?.avatar]);
+
   const updateNotificationPreference = useCallback(async (enabled: boolean) => {
     if (!user) {
       toast({
@@ -101,8 +108,11 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
         title: t('success'),
         description: enabled ? t('notificationsEnabled') : t('notificationsDisabled'),
       });
-    } catch (error) {
-      console.error('Error updating notification preference:', error);
+    } catch (error: any) {
+      console.error('Error updating notification preference:', {
+        message: error.message,
+        details: error,
+      });
       toast({
         title: t('error'),
         description: t('failedToUpdateNotifications'),
@@ -111,7 +121,172 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
     }
   }, [user, onUpdateProfile, t, toast]);
 
-  const handleUpdateProfile = () => {
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      toast({
+        title: t('error'),
+        description: t('noFileSelected'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: t('error'),
+        description: t('loginRequired'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file type and size
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: t('error'),
+        description: t('invalidFileType'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (file.size > maxSize) {
+      toast({
+        title: t('error'),
+        description: t('fileTooLarge'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Verify session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      console.error('Session validation failed:', {
+        message: sessionError?.message,
+        details: sessionError,
+      });
+      toast({
+        title: t('error'),
+        description: t('sessionExpired'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Generate a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const filePath = fileName;
+
+      console.log('Uploading file to:', filePath);
+
+      // Clean up existing avatar files for the user
+      const { data: existingFiles, error: listError } = await supabase.storage
+        .from('avatars')
+        .list(`${user.id}/`);
+      if (listError) {
+        console.error('Error listing existing files:', {
+          message: listError.message,
+          details: listError,
+        });
+      } else if (existingFiles) {
+        const deletePromises = existingFiles.map(file =>
+          supabase.storage.from('avatars').remove([`${user.id}/${file.name}`])
+        );
+        await Promise.all(deletePromises);
+        console.log('Cleaned up existing avatars');
+      }
+
+      // Upload file to Supabase storage with retry
+      let uploadError: any = null;
+      let uploadData: any = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const { error, data } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, file, { upsert: true });
+          if (error) throw error;
+          uploadData = data;
+          uploadError = null;
+          break;
+        } catch (err) {
+          console.warn(`Upload attempt ${attempt} failed:`, {
+            message: err.message,
+            details: err,
+          });
+          uploadError = err;
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          }
+        }
+      }
+
+      if (uploadError) {
+        console.error('Upload error after retries:', {
+          message: uploadError.message,
+          details: uploadError,
+        });
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      console.log('Upload successful:', uploadData);
+
+      // Get public URL for the uploaded file
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      if (!publicUrlData?.publicUrl) {
+        console.error('Failed to get public URL');
+        throw new Error('Failed to get public URL');
+      }
+
+      const newAvatarUrl = publicUrlData.publicUrl;
+      console.log('Public URL:', newAvatarUrl);
+
+      // Update user profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar: newAvatarUrl })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Update error:', {
+          message: updateError.message,
+          details: updateError,
+        });
+        throw new Error(`Database update failed: ${updateError.message}`);
+      }
+
+      setAvatar(newAvatarUrl);
+      onUpdateProfile({
+        ...user,
+        avatar: newAvatarUrl,
+      });
+
+      toast({
+        title: t('success'),
+        description: t('profilePictureUpdated'),
+      });
+    } catch (error: any) {
+      console.error('Error uploading profile picture:', {
+        message: error.message,
+        stack: error.stack,
+        details: error,
+      });
+      toast({
+        title: t('error'),
+        description: t('failedToUpdateProfilePicture'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUpdateProfile = async () => {
     if (!user) {
       toast({
         title: t('error'),
@@ -133,11 +308,35 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
         emailReminders: emailRemindersEnabled,
       },
     };
-    onUpdateProfile(updatedUser);
-    toast({
-      title: t('profileUpdated'),
-      description: t('profileUpdated'),
-    });
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          name: updatedUser.name,
+          email: updatedUser.email,
+          preferences: updatedUser.preferences,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      onUpdateProfile(updatedUser);
+      toast({
+        title: t('profileUpdated'),
+        description: t('profileUpdated'),
+      });
+    } catch (error: any) {
+      console.error('Error updating profile:', {
+        message: error.message,
+        details: error,
+      });
+      toast({
+        title: t('error'),
+        description: t('failedToUpdateProfile'),
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleClearNotifications = () => {
@@ -146,18 +345,6 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
       title: t('notifications'),
       description: t('notificationsCleared'),
     });
-  };
-
-  const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setAvatar(result);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleImportSharedTask = () => {
@@ -205,6 +392,10 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
       description: t('taskImported'),
     });
   };
+
+  if (!user) {
+    return null; // Prevent rendering if user is not loaded
+  }
 
   return (
     <div className="flex-1 p-4 md:p-6 space-y-6 animate-fade-in">
@@ -407,7 +598,7 @@ const Profile = ({ user, tasks, notifications, onUpdateProfile, onClearNotificat
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <ScrollArea className="h-[200px] w-full rounded-md border">
+            <ScrollArea className="h-[200px] W-full rounded-md border">
               <div className="p-3">
                 {uniqueNotifications.length > 0 ? (
                   uniqueNotifications.map((notification) => (

@@ -62,16 +62,19 @@ const App = () => {
     console.log('Fetching initial session');
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('Error fetching initial session:', error);
+        console.error('Error fetching initial session:', {
+          message: error.message,
+          details: error,
+        });
       }
-      console.log('Initial session:', session);
+      console.log('Initial session:', session ? 'Session exists' : 'No session');
       setSession(session);
       setIsLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('Auth state changed, session:', session);
-      setSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log('Auth state changed:', event, newSession ? 'Session exists' : 'No session');
+      setSession(newSession);
     });
 
     return () => {
@@ -81,7 +84,14 @@ const App = () => {
   }, []);
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-lg text-foreground">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -92,7 +102,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <ErrorBoundary>
-              <BrowserRouter>
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
                   <Route
