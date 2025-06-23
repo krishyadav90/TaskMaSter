@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { User } from '@/lib/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/components/ThemeProvider'; // Import useTheme
 import { 
   Select, 
   SelectContent, 
@@ -25,6 +26,13 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { language, setLanguage, t } = useLanguage();
+  const { setTheme } = useTheme(); // Destructure setTheme from useTheme
+
+  // Force light theme on Auth page
+  useEffect(() => {
+    console.log('Auth: Forcing light theme');
+    setTheme('light');
+  }, [setTheme]);
 
   const languages = [
     { value: 'en', label: 'English', flag: '🇺🇸' },
@@ -59,7 +67,7 @@ const Auth = () => {
             name,
             email,
             signup_date: new Date().toISOString(),
-            preferences: { theme: 'system', notifications: true, emailReminders: true },
+            preferences: { theme: 'light', notifications: true, emailReminders: true }, // Default to light
           };
           const { error: profileError } = await supabase.from('users').insert(newUser);
           if (profileError) throw profileError;
