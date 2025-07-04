@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .env.local
+config.toml
+package-lock.json
+project-ref
