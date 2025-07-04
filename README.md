@@ -1,186 +1,190 @@
-<h1 align="center">✅ TaskMaster - Your Ultimate Productivity Companion 🚀</h1>
-
-<p align="center">
-  <img src="./public/banner.png" alt="TaskMaster Banner" />
-</p>
-
-<p align="center">
-  A sleek, powerful, and user-friendly task management application designed to supercharge your productivity.  
-  <br />
-  Built with modern web technologies like React, TypeScript, Tailwind, and Shadcn UI.  
-</p>
+<h1>✅ TaskMaster - Your Ultimate Productivity Companion 🚀</h1>
+  <div align="center">
+  <img src="./public/banner.png" alt="TaskMaster Cover" width="100%" />
+  <p>
+    A sleek, powerful, and user-friendly task management application designed to supercharge your productivity.<br>
+    Built with modern web technologies, TaskMaster helps you organize tasks, track progress, and stay motivated. 🌟
+  </p>
+</div>
 
 ---
 
 ## 🌟 What is TaskMaster?
 
-**TaskMaster** is your go-to tool for managing daily tasks with ease and style. Whether you're juggling work, personal projects, or life goals, **TaskMaster** empowers you to stay organized, prioritize effectively, and celebrate your achievements.
+**TaskMaster** is your go-to tool for managing daily tasks with ease and elegance. Whether you're juggling work, personal projects, or life goals — TaskMaster empowers you to:
 
-With a **modern design** and **smart features**, it’s the perfect companion for anyone looking to master their tasks! 💪
+- ✅ Stay organized  
+- 🎯 Prioritize effectively  
+- 🏆 Celebrate achievements  
+
+With a **modern design** and **smart features**, it’s the perfect companion to master your productivity!
 
 ---
 
 ## ✨ Key Features
 
-- ✅ **Robust Task Management**  
-  Assign priorities, set deadlines, and reorder tasks with drag-and-drop.
+### ✅ Robust Task Management
+- Assign priority levels and deadlines 📅  
+- Drag-and-drop task reordering 🔄  
 
-- 🎨 **Beautiful & Responsive Design**  
-  Light, Dark, and System themes – optimized for all screen sizes.
+### 🎨 Beautiful & Responsive Design
+- Light, Dark, and System themes 🌙☀️  
+- Mobile-first responsive layout 📱💻  
 
-- 📊 **Analytics & Achievements**  
-  View progress with charts and unlock motivational milestones.
+### 📊 Analytics & Achievements
+- Track progress with analytics 📈  
+- Unlock motivational badges 🏆  
 
-- 🔔 **Smart Notifications**  
-  Get timely reminders to stay on track.
+### 🔔 Smart Notifications
+- Get real-time reminders and updates 🔔  
 
-- 👤 **Personalized User Profiles**  
-  Customize your preferences and identity.
+### 👤 Personalized User Profiles
+- Customize your workspace and preferences 🌟  
 
-- 📅 **Interactive Calendar**  
-  Plan your days using a beautiful calendar view.
+### 📅 Interactive Calendar
+- Advanced date selection to plan precisely 🗓️  
+
+---
+
+## 🌍 Multiple Language Support
+
+TaskMaster supports the following languages:
+
+- 🇺🇸 English  
+- 🇮🇳 हिंदी  
+- 🇷🇺 Русский  
+- 🇨🇳 中文  
+- 🇪🇸 Español  
+- 🇫🇷 Français  
+- 🇵🇹 Português  
+- 🇵🇰 اردو  
+- 🇩🇪 Deutsch  
+- 🇯🇵 日本語  
+- 🇮🇩 Bahasa Indonesia  
+- 🇰🇷 한국어  
+
+> 🧠 Language preference is saved and dynamically switches UI content accordingly!
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Technology       | Role                                         |
-|------------------|----------------------------------------------|
-| ⚛️ React 18+       | Frontend UI framework                        |
-| 📘 TypeScript     | Type-safe coding for better reliability      |
-| 🎨 Tailwind CSS   | Utility-first CSS for clean styling          |
-| 🧩 Shadcn UI      | Beautiful reusable UI components             |
-| 🌈 Lucide Icons   | Lightweight and modern icon set              |
-| 📅 date-fns       | Elegant date handling and formatting         |
-| ⚡ Vite           | Fast build tool and development server       |
+| Technology     | Purpose                                 |
+|----------------|------------------------------------------|
+| React 18+ ⚛️     | Dynamic, component-based UI              |
+| TypeScript 📘    | Type-safe development                   |
+| Tailwind CSS 🎨  | Utility-first styling                   |
+| Shadcn UI 🧩     | Elegant, reusable components             |
+| Lucide Icons 🌈  | Beautiful and scalable icons            |
+| date-fns 📅      | Lightweight date manipulation           |
+| Vite ⚡          | Lightning-fast build & dev server       |
 
 ---
 
 ## 📂 Project Structure
 
-```
-
-📁 public/                   → Static assets (images, favicon, etc.)
-📁 src/
-├── 📁 components/           → Reusable UI components
-│   ├── ✅ tasks/            → Task management components
-│   ├── 📅 calendar/         → Interactive calendar components
-│   ├── 📊 analytics/        → Progress and achievements
-│   └── 🧩 ui/               → Shared UI components (Shadcn)
-├── 📁 hooks/                → Custom React hooks
-├── 📁 utils/                → Utility functions
-├── ⚛️ App.tsx               → Main application component
-└── 🚀 main.tsx              → Vite entry point
-
-📦 package.json              → Project dependencies
-⚙️ vite.config.ts            → Vite configuration
-🎨 tailwind.config.ts        → Tailwind theme configuration
-📘 tsconfig.json             → TypeScript config
-
+```bash
+├── public/                  # Static assets (images, favicon, etc.)
+├── src/
+│   ├── components/
+│   │   ├── tasks/           # Task management UI
+│   │   ├── calendar/        # Calendar widgets
+│   │   ├── analytics/       # Charts and progress tracking
+│   │   └── ui/              # Shadcn shared components
+│   ├── hooks/               # Custom React hooks
+│   ├── utils/               # Helper functions
+│   ├── App.tsx             # Main component
+│   └── main.tsx            # Vite entry point
+├── .gitignore               # Git ignored files
+├── package.json             # Project metadata
+├── vite.config.ts           # Vite setup
+├── tailwind.config.ts       # Tailwind setup
+└── tsconfig.json            # TypeScript config
 ````
 
 ---
 
 ## 🚀 Get Started
 
-### 1. Clone the Repository  
 ```bash
+# 1. Clone the Repository
 git clone https://github.com/krishyadav90/TaskMaster.git
 cd TaskMaster
-````
 
-### 2. Install Dependencies
-
-```bash
+# 2. Install Dependencies
 npm install
+
+# 3. Start Development Server
+npm run dev
 ```
 
-### 3. Run the Development Server
-
-```bash
-npm run start
-```
-
-Then, open 👉 [http://localhost:5173](http://localhost:5173) in your browser!
+Visit `https://todo-website-ten.vercel.app/` to start organizing your tasks! 🎉
 
 ---
 
-## 🔐 Environment Variables (Optional)
+## 🔐 Environment Variables
 
-If you're integrating external services (notifications, APIs, etc.), create a `.env` file:
+For external integrations (like notifications or analytics), create a `.env` file in root:
 
-```env
+```
 VITE_API_URL=https://your-api-endpoint
 VITE_API_KEY=your-api-key
 ```
 
 ---
 
-## 📜 License
+## 📜 License & Usage
 
-This project is licensed under the **MIT License**.
+Released under the **MIT License**, allowing you to:
 
-✅ You can:
+✅ Use for personal or commercial purposes
+✅ Modify and redistribute
+✅ Integrate into proprietary apps
+✅ Sell modified versions
 
-* Use it personally or commercially
-* Modify and distribute it
-* Integrate it into your projects
-* Sell modified versions
+**Requirements:**
 
-⚠️ You must:
+* Keep original copyright
+* Credit [Krish Yadav](mailto:krishyada9865@gmail.com)
 
-* Include the original license and credit
-* Acknowledge **Krish Yadav** as the creator
-
-🛑 No warranties are provided. Use at your own risk.
+> ⚠️ This project is provided "as-is" with no warranties.
 
 ---
 
 ## 🤝 How to Contribute
 
-We love contributors! Here's how you can help:
+We ❤️ contributions!
 
-```bash
-# Fork this repo
-# Create a feature branch
-git checkout -b feature/your-feature-name
-
-# Commit and push
-git commit -m "Add awesome feature"
-git push origin feature/your-feature-name
-```
-
-Then open a **Pull Request** with a clear description.
-🐛 Found a bug or want a new feature? [Open an Issue](https://github.com/krishyadav90/TaskMaster/issues)
+1. Fork the repo 🍴
+2. Create a branch: `git checkout -b feature/awesome-feature`
+3. Commit: `git commit -m 'Add awesome feature'`
+4. Push: `git push origin feature/awesome-feature`
+5. Open a Pull Request 🎉
 
 ---
 
 ## 💡 Developer’s Note
 
-Hey! I’m **Krish Yadav** 👋, the creator of TaskMaster.
+Hi, I’m **Krish Yadav**, creator of TaskMaster! 👋
+I built this app to help people stay organized with a fun and intuitive interface. Feel free to:
 
-I built this app to make productivity **fun, beautiful, and easy**.
-I encourage you to:
+* 🤝 Add features
+* 🐛 Report issues
+* 🔧 Customize it
+* 🚀 Share your mods
 
-* 🔧 Customize it for your needs
-* 🌟 Use it as a learning project
-* 🤝 Collaborate and contribute
-* 🧠 Suggest ideas for new features
+Let’s build a productive world together!
 
 ---
 
 ## 📬 Contact
 
-**Developer**: Krish Yadav
-📧 Email: [krishyada9865@gmail.com](mailto:krishyada9865@gmail.com)
-🔗 GitHub: [@krishyadav90](https://github.com/krishyadav90)
-📄 License: MIT
+* **Name:** Krish Yadav
+* **Email:** [krishyada9865@gmail.com](mailto:krishyada9865@gmail.com)
+* **Project:** TaskMaster
+* **License:** MIT
 
 ---
 
-<p align="center">
-  🌟 <strong>TaskMaster</strong> — Organize, prioritize, and conquer your tasks with ease.  
-  <br />
-  Built with ❤️ by <strong>Krish Yadav</strong>
-</p>
-
+> 🌟 **TaskMaster** — Organize, prioritize, and conquer your tasks with ease!
+> Built with ❤️ by **Krish Yadav**
